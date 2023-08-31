@@ -51,6 +51,41 @@ def calculate_hand_value(hand):
 
     return value, hard_or_soft
 
+def generate_bj_bet_size():
+    buster_bet_size = {
+    5: 0.2,
+    10: 0.1,
+    15: 0.1,
+    20: 0.1,
+    30: 0.1,
+    40: 0.1,
+    50: 0.1,
+    60: 0.1,
+    80: 0.05,
+    100: 0.05
+    }
+    
+    random_number = random.choices(list(buster_bet_size.keys()), weights=list(buster_bet_size.values()))[0]
+    return(random_number)
+
+
+def generate_buster_bet_size():
+    buster_bet_size = {
+    0: 0.2,
+    5: 0.2,
+    10: 0.3,
+    15: 0.1,
+    20: 0.1,
+    30: 0.1
+    }
+
+    random_number = random.choices(list(buster_bet_size.keys()), weights=list(buster_bet_size.values()))[0]
+    return(random_number)
+
+
+
+
+
 
 #if blackjack
 def is_blackjack(hand):
@@ -108,8 +143,12 @@ def play_blackjack():
 
     
     for _ in range(NUM_PLAYERS):
-        player_bj_bet = random.randint(MIN_BJ_BET, MAX_BJ_BET)
-        player_buster_bet = random.randint(MIN_BUSTER_BET,MAX_BUSTER_BET)
+        #player_bj_bet = random.randint(MIN_BJ_BET, MAX_BJ_BET)
+        #player_buster_bet = random.randint(MIN_BUSTER_BET,MAX_BUSTER_BET)
+
+        player_bj_bet = generate_bj_bet_size()
+        player_buster_bet = generate_buster_bet_size()
+
         player_hand = [deck.pop(), deck.pop()]
         player_hand_value = calculate_hand_value(player_hand)
         

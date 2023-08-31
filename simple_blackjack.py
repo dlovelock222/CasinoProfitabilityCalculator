@@ -1,5 +1,3 @@
-print("testing")
-
 import random
 
 # Define constants
@@ -83,6 +81,24 @@ def generate_buster_bet_size():
     return(random_number)
 
 
+def basic_strategy(player_hand, player_hand_value):
+    while player_hand_value[0] < 16:
+        player_hand.append(deck.pop())
+        player_hand_value = calculate_hand_value(player_hand)
+    return(player_hand, player_hand_value)
+
+def bs_pairs(player_hand, player_hand_value):
+    return True
+
+def bs_double_down(player_hand, player_hand_value):
+    return True
+
+def soft_totals(player_hand, player_hand_value):
+    return True
+
+def hard_totals(player_hand, player_hand_value):
+    return True
+
 
 
 
@@ -153,9 +169,11 @@ def play_blackjack():
         player_hand_value = calculate_hand_value(player_hand)
         
         # Player's turn
-        while player_hand_value[0] < 16:
-            player_hand.append(deck.pop())
-            player_hand_value = calculate_hand_value(player_hand)
+        # while player_hand_value[0] < 16:
+        #     player_hand.append(deck.pop())
+        #     player_hand_value = calculate_hand_value(player_hand)
+        player_hand, player_hand_value = basic_strategy(player_hand, player_hand_value)
+        
         
 
         if is_blackjack(player_hand) and is_blackjack(dealer_hand):

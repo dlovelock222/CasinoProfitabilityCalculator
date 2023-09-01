@@ -1,7 +1,7 @@
 import random
 
 # Define constants
-NUM_PLAYERS = 1
+NUM_PLAYERS = 6
 MIN_BJ_BET = 5
 MAX_BJ_BET = 100
 MIN_BUSTER_BET = 0
@@ -88,6 +88,20 @@ deck = ranks * DECKS * 4 #4 is for the suits
 random.shuffle(deck)
 
 
+def calculate_drop(total_bet):
+    drop = 0
+    if total_bet < 25:
+        drop = -2
+    elif total_bet >= 25 and total_bet <= 300:
+        drop = -3
+    elif total_bet >= 300 and total_bet <= 500:
+        drop = -4
+    else:
+        drop = -5
+    return drop
+
+
+
 
 # Function to calculate the value of a hand PLAYER
 def calculate_hand_value(hand):
@@ -162,7 +176,6 @@ def basic_strategy(player_hands, player_hand_value, dealer_hand):
             player_hand = [player_hand[0], (deck.pop())]
             player_hand_value = calculate_hand_value(player_hand)
         
-        print(player_hands)
         if len(player_hand) == 2 and player_hand[0] == player_hand[1] and len(player_hands) <= MAX_SPLITS_ALLOWED:  #CASINO HAS MAX SPLIT
                 if bs_pairs(player_hand, player_hand_value, dealer_up) == "SP":
                     player_hands.append([player_hand[1], calculate_hand_value(player_hand[1])]) #adding a new hand and have to also add the value because the hand is a tuple. [1] is the second card
@@ -179,13 +192,12 @@ def basic_strategy(player_hands, player_hand_value, dealer_hand):
 
             else:
                 player_hand, player_hand_value, decision = bs_hard_totals(player_hand, player_hand_value, dealer_up)
-            print("PLAYER HAND", player_hand, "PLAYER DECISION", decision)
         
         played_hands.append((player_hand, player_hand_value))
+        decision = 'Play'
 
-    print(played_hands, "HANDS TESTINGGGG")
-    return player_hand, player_hand_value, decision
-    #NEEDS TO RETURN A LIST OF HANDS! WE WILL ITERATE THROUGH LATER WHEN WE PRINT AND CALCULATE! if length of player hands list > 1 then it's a split and double bet!
+    print("All hands:", played_hands)
+    return played_hands, player_hand_value, decision
         
 
 
@@ -234,9 +246,6 @@ def bs_hard_totals(player_hand, player_hand_value, dealer_up):
 
 
 
-
-
-
 #if blackjack
 def is_blackjack(hand):
     return len(hand) == 2 and 'A' in hand and any(card in ['10', 'J', 'Q', 'K'] for card in hand)
@@ -273,13 +282,11 @@ def play_blackjack():
     bj_profit = 0
     buster_profit = 0
     
-    
-
 
     # Dealer's hand
     dealer_hand = [deck.pop(), deck.pop()]
     # TEST BLACKJACK 
-    dealer_hand = ['10','K']
+    #dealer_hand = ['10','K']
     dealer_hand_value = calculate_hand_value(dealer_hand)
     while dealer_hand_value[0] < 17 or (dealer_hand_value[0] == 17 and dealer_hand_value[1] == 'Soft'):
         dealer_hand.append(deck.pop())
@@ -289,6 +296,7 @@ def play_blackjack():
 
 
     number_player = 1
+    total_bet = 0
     
     for _ in range(NUM_PLAYERS):
 
@@ -296,78 +304,87 @@ def play_blackjack():
         player_buster_bet = generate_buster_bet_size()
         player_hands = [] #need a list because you might split
         player_hand = [deck.pop(), deck.pop()]
-        player_hand = ["A", "A"]
+        #player_hand = ["A", "A"]
         player_hand_value = calculate_hand_value(player_hand)
         original_hand = (player_hand, player_hand_value)
         player_hands.append(original_hand)
         #player_hands[0] = ['4', '4', '3']
-        player_hand, player_hand_value, decision = basic_strategy(player_hands, player_hand_value, dealer_hand)
+        player_hands, player_hand_value, decision = basic_strategy(player_hands, player_hand_value, dealer_hand)
 
-        #add in list logic here to account for splits
+        player_hand_number = 1
+        for hand in player_hands:
 
-        if decision == "D":
-            #print("PLAYER DOUBLES!", player_bj_bet, "now is ", player_bj_bet * 2)
-            player_bj_bet *= 2
+            player_hand = hand[0]
+            player_hand_value = hand[1]
+ 
+            if decision == "D":
+                player_bj_bet *= 2
 
-        if is_blackjack(player_hand) and is_blackjack(dealer_hand):
-            result = "BJ Push"
-            number_bj_push += 1
+            if is_blackjack(player_hand) and is_blackjack(dealer_hand):
+                result = "BJ Push"
+                number_bj_push += 1
 
-        elif is_blackjack(player_hand):
-            if is_blackjack(player_hand):
-                result = "Player Blackjack"
-                bj_profit -= player_bj_bet * BLACKJACK_PAYOUT
-                number_blackjacks += 1
+            elif is_blackjack(player_hand):
+                if is_blackjack(player_hand):
+                    result = "Player Blackjack"
+                    bj_profit -= player_bj_bet * BLACKJACK_PAYOUT
+                    number_blackjacks += 1
 
-        elif decision == 'SUR':
-            result = "Player surrenders"
-            bj_profit += (player_bj_bet / 2)
-            number_wins += 1
+            elif decision == 'SUR':
+                result = "Player surrenders"
+                bj_profit += (player_bj_bet / 2)
+                number_wins += 1
 
-        elif player_hand_value[0] > 21:
-            result = "Player busts"
-            bj_profit += player_bj_bet
-            number_wins += 1
+            elif player_hand_value[0] > 21:
+                result = "Player busts"
+                bj_profit += player_bj_bet
+                number_wins += 1
+            
+            elif dealer_hand_value[0] > 21:
+                result = "Dealer busts"
+                bj_profit -= player_bj_bet
+                number_losses += 1
 
-        elif dealer_hand_value[0] > 21:
-            result = "Dealer busts"
-            bj_profit -= player_bj_bet
-            number_losses += 1
+            elif player_hand_value[0] > dealer_hand_value[0]:
+                result = "Player wins"
+                bj_profit -= player_bj_bet
+                number_losses += 1
 
-        elif player_hand_value[0] > dealer_hand_value[0]:
-            result = "Player wins"
-            bj_profit -= player_bj_bet * 2
-            number_losses += 1
+            elif player_hand_value[0] < dealer_hand_value[0]:
+                result = "Dealer wins"
+                bj_profit += player_bj_bet
+                number_wins += 1
 
-        elif player_hand_value[0] < dealer_hand_value[0]:
-            result = "Dealer wins"
-            bj_profit += player_bj_bet
-            number_wins += 1
-
-        else:
-            result = "Push"
-            number_push += 1
+            else:
+                result = "Push"
+                number_push += 1
 
 
-        if dealer_hand_value[0] > 21:
-            #print("BUSTER BET PAYS!")
-            buster_profit -= buster_payout_calc(player_buster_bet, dealer_hand)   #ONLY CASE WHERE BUSTER PAYS!
-        else:
-            buster_profit += player_buster_bet
+            if dealer_hand_value[0] > 21:
+                #print("BUSTER BET PAYS!")
+                buster_profit -= buster_payout_calc(player_buster_bet, dealer_hand)   #ONLY CASE WHERE BUSTER PAYS!
+            else:
+                buster_profit += player_buster_bet
+            
+
         
+            
+            # Print game results
+            print("Player Bet BJ: $", player_bj_bet, '--', "Buster: $", player_buster_bet)
+            print("Player", number_player,"hand #",player_hand_number, ":", player_hand, "Value:", player_hand_value[1], player_hand_value[0])
+            print(f"Result: {result}")
+            print("----------")
 
-    
-        
-        # Print game results
-        print("Player Bet BJ: $", player_bj_bet, '--', "Buster: $", player_buster_bet)
-        print("Player", number_player, "hand:", player_hand, "Value:", player_hand_value[1], player_hand_value[0])
-        print(f"Result: {result}")
-        print("----------")
+            total_bet += (player_bj_bet + player_buster_bet)
+
+            player_hand_number += 1
 
         number_player += 1
 
     house_balance += buster_profit
-    house_balance += bj_profit    
+    house_balance += bj_profit  
+    drop = calculate_drop(total_bet)  
+    house_balance += drop
 
     print("Dealer hand:", dealer_hand, "Value:", dealer_hand_value[1], dealer_hand_value[0])
 
@@ -375,13 +392,8 @@ def play_blackjack():
 
     print(f"BJ Win/Loss: ${bj_profit}")
     print(f"Buster Win/Loss: ${buster_profit}")
+    print(f"Drop: ${drop}")
     print(f"Bank Win/Loss: ${house_balance}")
-    if house_balance > 0:
-        print("House wins")
-    elif house_balance < 0:
-        print("Players win")
-    else:
-        print("It's a tie")
 
 
 

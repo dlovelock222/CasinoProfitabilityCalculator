@@ -1,12 +1,13 @@
 import random
 
 # Define constants
-NUM_PLAYERS = 6
+NUM_PLAYERS = 1
 MIN_BJ_BET = 5
 MAX_BJ_BET = 100
 MIN_BUSTER_BET = 0
 MAX_BUSTER_BET = 100
 BLACKJACK_PAYOUT = 1.2
+MAX_SPLITS_ALLOWED = 3
 DECKS = 6
 
 
@@ -51,13 +52,33 @@ basic_strategy_soft = [
 ['S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S']   # Player value A,10/J/Q/K
 ]
 
+player_values_pairs = list(range(4, 21))
+# Basic strategy decisions: H (Hit), S (Stand), D (Double), SUR (Surrender), SP (Split)
+basic_strategy_pair = [
+['SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # Player value 2,2
+['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # DUMMY ROW 5
+['SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # Player value 3,3
+['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # DUMMY ROW 7
+['N', 'N', 'N', 'SP', 'SP', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # Player value 4,4
+['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # DUMMY ROW 9
+['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # Player value 5,5
+['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # DUMMY ROW 11
+['SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'SP'],  # Player value A,A
+['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # DUMMY ROW 13
+['SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # Player value 7,7
+['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # DUMMY ROW 15
+['SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'SP', 'SP'],  # Player value 8,8
+['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # DUMMY ROW 17
+['SP', 'SP', 'SP', 'SP', 'SP', 'N', 'SP', 'SP', 'N', 'N', 'N', 'N', 'N'],  # Player value 9,9
+['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # DUMMY ROW 19
+['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # Player value 10,10 (J/Q/K also)
+]
+
 
 # Create the 2D array for basic strategy decisions
 basic_strategy_hard_array = dict(zip(player_values_hard, basic_strategy_hard))
 basic_strategy_soft_array = dict(zip(player_values_soft, basic_strategy_soft))
-
-
-
+basic_strategy_pair_array = dict(zip(player_values_pairs, basic_strategy_pair))
 
 
 
@@ -126,53 +147,61 @@ def generate_buster_bet_size():
     return(random_number)
 
 
-def basic_strategy(player_hand, player_hand_value, dealer_hand):
+def basic_strategy(player_hands, player_hand_value, dealer_hand):
 
     dealer_up = dealer_hand[0]
     decision = 'Play'
+    played_hands = []
 
-    while decision not in ['S', 'SUR', 'D'] and player_hand_value[0] < 21:
-        if player_hand_value[1] == "Soft":
-            player_hand, player_hand_value, decision = bs_soft_totals(player_hand, player_hand_value, dealer_up)
-        elif (player_hand_value[0] == 16 and len(player_hand) == 2 and dealer_up in ['9', '10', 'J', 'Q', 'K', 'A']) or (player_hand_value[0] == 15 and len(player_hand) == 2 and dealer_up in ['10', 'J', 'Q', 'K']):
-            decision = 'SUR'
-        else:
-            player_hand, player_hand_value, decision = bs_hard_totals(player_hand, player_hand_value, dealer_up)
-        print("PLAYER HAND", player_hand, "PLAYER DECISION", decision)
-    return player_hand, player_hand_value, decision
+    for hand in player_hands:
+
+        player_hand = hand[0]
+        player_hand_value = hand[1]  #Reassign the hand and value while iterating. Remove it from tuple.
+
+        if len(player_hand) == 1: 
+            player_hand = [player_hand[0], (deck.pop())]
+            player_hand_value = calculate_hand_value(player_hand)
         
-        
-    # if len(player_hand) == 2 and player_hand[0] == player_hand[1]:
-    #     return bs_pairs(player_hand, dealer_up)
+        print(player_hands)
+        if len(player_hand) == 2 and player_hand[0] == player_hand[1] and len(player_hands) <= MAX_SPLITS_ALLOWED:  #CASINO HAS MAX SPLIT
+                if bs_pairs(player_hand, player_hand_value, dealer_up) == "SP":
+                    player_hands.append([player_hand[1], calculate_hand_value(player_hand[1])]) #adding a new hand and have to also add the value because the hand is a tuple. [1] is the second card
+                    player_hand = [player_hand[0], (deck.pop())] #only take the first card of the pair
+                    player_hand_value = (calculate_hand_value(player_hand)) #recalc value
 
-    # if player_hand_value[0] in [15, 16]:
-    #     if bs_surrender(player_hand_value, dealer_up):
-    #         return "Surrender"
-
-    # while player_hand_value[0] < 16:
-    #     player_hand.append(deck.pop())
-    #     player_hand_value = calculate_hand_value(player_hand)
-    # return(player_hand, player_hand_value)
-
-def bs_pairs(player_hand, player_hand_value): #NEED TO ADD LOGIC WHERE YOU CAN ONLY TAKE ONE CARD ON A SPLIT!
-    return True
-
-# def bs_surrender(player_hand_value, dealer_up):
-    # if player_hand_value[0] == 16 and player_hand_value[1] == "Hard" and dealer_up in ['9', '10', 'J', 'Q', 'K', 'A']:
-    #     return True
-    # elif player_hand_value[0] == 15 and player_hand_value[1] == "Hard" and dealer_up in ['10', 'J', 'Q', 'K']:
-    #     return True
-    # else:
-    #     return False
+        while decision not in ['S', 'SUR', 'D'] and player_hand_value[0] < 21:
     
-def bs_soft_totals(player_hand, player_hand_value, dealer_up): #FINSIH LOGIC
+            if player_hand_value[1] == "Soft":
+                player_hand, player_hand_value, decision = bs_soft_totals(player_hand, player_hand_value, dealer_up)
+
+            elif (player_hand_value[0] == 16 and len(player_hand) == 2 and dealer_up in ['9', '10', 'J', 'Q', 'K', 'A']) or (player_hand_value[0] == 15 and len(player_hand) == 2 and dealer_up in ['10', 'J', 'Q', 'K']):
+                decision = 'SUR'
+
+            else:
+                player_hand, player_hand_value, decision = bs_hard_totals(player_hand, player_hand_value, dealer_up)
+            print("PLAYER HAND", player_hand, "PLAYER DECISION", decision)
+        
+        played_hands.append((player_hand, player_hand_value))
+
+    print(played_hands, "HANDS TESTINGGGG")
+    return player_hand, player_hand_value, decision
+    #NEEDS TO RETURN A LIST OF HANDS! WE WILL ITERATE THROUGH LATER WHEN WE PRINT AND CALCULATE! if length of player hands list > 1 then it's a split and double bet!
+        
+
+
+def bs_pairs(player_hand, player_hand_value, dealer_up):
+    return basic_strategy_pair_array[player_hand_value[0]][dealer_upcards.index(dealer_up)]
+        
+    
+def bs_soft_totals(player_hand, player_hand_value, dealer_up):
     # Simulate a decision based on player value and dealer up card
     decision = basic_strategy_soft_array[player_hand_value[0]][dealer_upcards.index(dealer_up)]
-    if decision == "H":
+    if decision == "H" or (decision == 'D' and len(player_hand) != 2):
         player_hand.append(deck.pop())
         player_hand_value = calculate_hand_value(player_hand)
+        decision = "H"
 
-    elif decision == "D":
+    elif decision == "D" and len(player_hand) == 2: #can only double when you have two cards
         player_hand.append(deck.pop())
         player_hand_value = calculate_hand_value(player_hand)
 
@@ -185,11 +214,12 @@ def bs_hard_totals(player_hand, player_hand_value, dealer_up):
 
     # Simulate a decision based on player value and dealer up card
     decision = basic_strategy_hard_array[player_hand_value[0]][dealer_upcards.index(dealer_up)]
-    if decision == "H":
+    if decision == "H" or (decision == 'D' and len(player_hand) != 2):
         player_hand.append(deck.pop())
         player_hand_value = calculate_hand_value(player_hand)
+        decision = "H"
 
-    elif decision == "D":
+    elif decision == "D" and len(player_hand) == 2: #can only double when you have two cards
         player_hand.append(deck.pop())
         player_hand_value = calculate_hand_value(player_hand)
 
@@ -200,16 +230,6 @@ def bs_hard_totals(player_hand, player_hand_value, dealer_up):
         decision = 'S'
 
     return(player_hand, player_hand_value, decision)
-
-
-    def make_decision(player_value, dealer_upcard):
-        decision = basic_strategy_hard_array[player_value][dealer_upcards.index(dealer_upcard)]
-        return decision
-
-
-
-
-    return True
 
 
 
@@ -223,7 +243,6 @@ def is_blackjack(hand):
 
 def buster_payout_calc(bet, hand):
     bust_cards = len(hand)
-    #print(bust_cards)
     if bust_cards == 3 or bust_cards == 4:
         multiplier = 2
     elif bust_cards == 5:
@@ -245,7 +264,6 @@ def buster_payout_calc(bet, hand):
 
 # Main game loop
 def play_blackjack():
-
     number_blackjacks = 0
     number_wins = 0
     number_losses = 0
@@ -261,7 +279,7 @@ def play_blackjack():
     # Dealer's hand
     dealer_hand = [deck.pop(), deck.pop()]
     # TEST BLACKJACK 
-    #dealer_hand = ['10','K']
+    dealer_hand = ['10','K']
     dealer_hand_value = calculate_hand_value(dealer_hand)
     while dealer_hand_value[0] < 17 or (dealer_hand_value[0] == 17 and dealer_hand_value[1] == 'Soft'):
         dealer_hand.append(deck.pop())
@@ -270,16 +288,22 @@ def play_blackjack():
 
 
 
-
+    number_player = 1
     
     for _ in range(NUM_PLAYERS):
 
         player_bj_bet = generate_bj_bet_size()
         player_buster_bet = generate_buster_bet_size()
+        player_hands = [] #need a list because you might split
         player_hand = [deck.pop(), deck.pop()]
-        #player_hand = ['10', '2', '4']
+        player_hand = ["A", "A"]
         player_hand_value = calculate_hand_value(player_hand)
-        player_hand, player_hand_value, decision = basic_strategy(player_hand, player_hand_value, dealer_hand)
+        original_hand = (player_hand, player_hand_value)
+        player_hands.append(original_hand)
+        #player_hands[0] = ['4', '4', '3']
+        player_hand, player_hand_value, decision = basic_strategy(player_hands, player_hand_value, dealer_hand)
+
+        #add in list logic here to account for splits
 
         if decision == "D":
             #print("PLAYER DOUBLES!", player_bj_bet, "now is ", player_bj_bet * 2)
@@ -336,9 +360,11 @@ def play_blackjack():
         
         # Print game results
         print("Player Bet BJ: $", player_bj_bet, '--', "Buster: $", player_buster_bet)
-        print("Player hand:", player_hand, "Value:", player_hand_value[1], player_hand_value[0])
+        print("Player", number_player, "hand:", player_hand, "Value:", player_hand_value[1], player_hand_value[0])
         print(f"Result: {result}")
         print("----------")
+
+        number_player += 1
 
     house_balance += buster_profit
     house_balance += bj_profit    

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <stack>
 #include <random>
+#include <string>
 
 using namespace std;
 
@@ -240,39 +241,36 @@ string checkTrips(vector<int> numsHand){
 }
 string checkFullHouse(vector<int> numsHand){
     int prev = numsHand[numsHand.size()-1];
-    string card1 = "";
-    string card2 = "";
+    map<int,int> repeatingCards;
+    string toReturn = "";
+    vector<int> threeOfAKind;
+    vector<int> pair;
     for(int i = numsHand.size()-2;i>=0;i--){
         if(numsHand[i] == prev){
-            if(card1.length() == 0){
-                card1 += (char) prev;
-                card1 += (char) prev;
-            }
-            else if(card1.length() >= 0 && card1[0] == (char) numsHand[i]){
-                card1 += (char) prev;
-            }
-            else if(card2.length() == 0){
-                card2 += (char) prev;
-                card2 += (char) prev;
+            if(repeatingCards.find(numsHand[i]) != repeatingCards.end()){
+                repeatingCards[numsHand[i]]++;
+                if(repeatingCards[numsHand[i]] == 3){
+                    threeOfAKind.push_back(numsHand[i]);
+                }
+                else if(repeatingCards[numsHand[i]] == 2){
+                    pair.push_back(numsHand[i]);
+                }
             }
             else{
-                card2 += (char) prev;
+                repeatingCards[numsHand[i]] = 1;
             }
         }
         prev = numsHand[i];
     }
-    if(card1.length()+card2.length() >=5){
-        if(card1.length() == card2.length()){
-            if(card1 > card2) return card1 + card2.substr(1);
-            else return card2 + card1.substr(1);
+    if ((!threeOfAKind.empty() && !pair.empty()) || threeOfAKind.size() > 1) {
+        if (threeOfAKind.size() > 1) {
+            if(pair[0]>threeOfAKind[1]) return to_string((char)threeOfAKind[0] + (char) pair[0]);
         }
-        else if(card1.length() > card2.length()){
-            return card1 + card2;
-        }
-        else{
-            return card2 + card1;
+        else {
+            return to_string((char)threeOfAKind[0] + (char) threeOfAKind[1]);
         }
     }
+
     return "-1";
 }
 

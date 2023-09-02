@@ -6,32 +6,64 @@
 #include <stack>
 #include <random>
 #include <string>
+#include <ctime>
+//#include "handCheckingFunctions.h"
 
 using namespace std;
 
-const long long SIMS = 20;
-int BANKROLL = 21000;
-int NUMPLAYERS = 5;
-int MAXSTACK = 2000;
-int NUMCARDS = 52;
-int BETINCREMENTS = 5;
-int MAXBETINCREMENT = 10;
-map<string,int> handRankings;
-vector<string> numToCardConversion = 
-{"2s","3s","4s","5s","6s","7s","8s","9s","10s","Js","Qs","Ks","As",
+const long long SIMS = 40;
+const int BANKROLL = 21000;
+const int NUMPLAYERS = 4;
+const int MAXSTACK = 2000;
+const int NUMCARDS = 52;
+const int BETINCREMENTS = 5;
+const int MAXBETINCREMENT = 10;
+const vector<string> numToCardConversion = {
+ "2s","3s","4s","5s","6s","7s","8s","9s","10s","Js","Qs","Ks","As",
  "2d","3d","4d","5d","6d","7d","8d","9d","10d","Jd","Qd","Kd","Ad",
  "2c","3c","4c","5c","6c","7c","8c","9c","10c","Jc","Qc","Kc","Ac",
  "2h","3h","4h","5h","6h","7h","8h","9h","10h","Jh","Qh","Kh","Ah"
 };
-vector<string> numToHandConversion = {
-    "high Card", "pair", "twoPair", "three of a kind", "straight", "flush", "full house", "quads", "straight flush"
+const vector<string> numToHandConversion = {
+    "high Card", "pair", "twoPair", "three of a kind", "straight", "flush", "full house", "quads", "straight flush", "royal flush"
 };
+const vector<double> payoutBlind = {0,0,0,0,1,1.5,3,10,50,500};
+const vector<int> payoutTrips = {-1,-1,-1,3,4,7,8,30,40,50};
+vector<vector<int>> suitedRange{
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,4,4,4,4,4},
+    {1,1,1,1,1,1,1,4,4,4,4,4,4},
+    {1,1,1,1,1,1,1,4,4,4,4,4,4},
+    {1,1,1,1,1,1,1,4,4,4,4,4,4}
+};
+vector<vector<int>> nonSuitedRange{
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,4,4,4,4},
+    {1,1,1,1,1,1,1,4,4,4,4,4,4},
+    {1,1,1,4,4,4,4,4,4,4,4,4,4},
+    {4,4,4,4,4,4,4,4,4,4,4,4,4}
+};
+
 
 void dealCards(vector<int>&, vector<int>&, int);
 pair<int,string> handValue(vector<int>, vector<int>);
 
-
-//all of these algos check whether or not the player/dealer has a given hand
 string checkFlush(vector<int> realHand, vector<int> suitsHand){
     //the vector that gets passed in is already sorted and has already been divided by 13
     int count = 1, currMax = 1;
@@ -44,7 +76,7 @@ string checkFlush(vector<int> realHand, vector<int> suitsHand){
             if(count > currMax) currMax = count;
         }
         else{
-            count = 0;
+            count = 1;
         }
         prev = suitsHand[i];
     }
@@ -58,6 +90,10 @@ string checkFlush(vector<int> realHand, vector<int> suitsHand){
     return toReturn;
 }
 string checkStraight(vector<int> numsHand){
+    for(int i = 0;i<numsHand.size();i++){
+        if(numsHand[i] == 12) numsHand.push_back(-1);
+    }
+    sort(numsHand.begin(),numsHand.end());
     int count = 1, currMax = 1;
     int prev = numsHand[numsHand.size()-1];
     string toReturn = "";
@@ -75,16 +111,6 @@ string checkStraight(vector<int> numsHand){
             toReturn = "";
         }
         prev = numsHand[i];
-    }
-
-    //check for ace low straight
-    if(isAnAce){
-        for(int i = 0;i<numsHand.size();i++){
-            if(numsHand[i] == prev || numsHand[i] == prev+1){
-                if(numsHand[i] == 5) return "5";
-            }
-            else break;
-        }
     }
     return "-1";
 }
@@ -139,7 +165,7 @@ string checkQuads(vector<int> numsHand){
                     highCard += (char) prev;
                 }
             }
-                
+            count = 1;
         }
         prev = numsHand[i];
     }
@@ -240,68 +266,131 @@ string checkTrips(vector<int> numsHand){
     return "-1";
 }
 string checkFullHouse(vector<int> numsHand){
-    int prev = numsHand[numsHand.size()-1];
-    map<int,int> repeatingCards;
-    string toReturn = "";
-    vector<int> threeOfAKind;
-    vector<int> pair;
-    for(int i = numsHand.size()-2;i>=0;i--){
-        if(numsHand[i] == prev){
-            if(repeatingCards.find(numsHand[i]) != repeatingCards.end()){
-                repeatingCards[numsHand[i]]++;
-                if(repeatingCards[numsHand[i]] == 3){
-                    threeOfAKind.push_back(numsHand[i]);
-                }
-                else if(repeatingCards[numsHand[i]] == 2){
-                    pair.push_back(numsHand[i]);
-                }
-            }
-            else{
-                repeatingCards[numsHand[i]] = 1;
-            }
-        }
-        prev = numsHand[i];
+    std::map<int, int> cardCount;
+    std::vector<int> threeOfAKind;
+    std::vector<int> pair;
+
+    for (int card : numsHand) {
+        cardCount[card]++;
     }
-    if ((!threeOfAKind.empty() && !pair.empty()) || threeOfAKind.size() > 1) {
-        if (threeOfAKind.size() > 1) {
-            if(pair[0]>threeOfAKind[1]) return to_string((char)threeOfAKind[0] + (char) pair[0]);
+
+    for (const auto& entry : cardCount) {
+        int card = entry.first;
+        int count = entry.second;
+
+        if (count >= 3) {
+            threeOfAKind.push_back(card);
         }
-        else {
-            return to_string((char)threeOfAKind[0] + (char) threeOfAKind[1]);
+        else if (count == 2) {
+            pair.push_back(card);
+        }
+    }
+
+    if (!threeOfAKind.empty()) {
+        std::sort(threeOfAKind.begin(), threeOfAKind.end(), std::greater<int>());
+        int maxThree = threeOfAKind[0];
+        threeOfAKind.clear();
+
+        if (!pair.empty()) {
+            int smallThree = pair.back();
+            pair.pop_back();
+            pair.push_back(smallThree);
+        }
+
+        if (!pair.empty()) {
+            return std::to_string(maxThree) + std::to_string(maxThree) + std::to_string(maxThree) + std::to_string(pair[0]) + std::to_string(pair[0]);
         }
     }
 
     return "-1";
 }
+bool checkFlushDraw(vector<int> floppedHand){
+    vector<int> suits(4,0);
+    for(int i = 0;i<floppedHand.size();i++){
+        suits[floppedHand[i] / 13]++;
+    }
+    for(int i = 0;i<4;i++){
+        if(suits[i] == 4){
+            if((floppedHand[0]/4 == i && floppedHand[0]-(13*i) >= 8) || (floppedHand[1]/4 == i && floppedHand[1]-(13*i) >= 8)) return true;
+        }
+    }
+    return false;
+}
+
+//all of these algos check whether or not the player/dealer has a given hand
 
 int main(){
-    // vector<int> playerStks;
-    // long int totalOnTable = 0;
+    vector<int> handsOverWholeSim = {0,0,0,0,0,0,0,0,0,0};
+    vector<int> playerStks(NUMPLAYERS,2000);
+    long int totalOnTable = 0;
     // for(int i = 0;i<NUMPLAYERS;i++){
-    //     int x = rand() * MAXSTACK;
+    //     int x = MAXSTACK;
     //     playerStks.push_back(x);
     //     totalOnTable += x;
     // }
     vector<vector<int>> playerBets(NUMPLAYERS, vector<int>(3,0));
-    auto rng = default_random_engine {};
+    auto rng = default_random_engine {time(0)};
     for(int i = 0;i<SIMS;++i){
         //place player initial bets (trips and anti/blind)
-        // for(int j = 0;j<NUMPLAYERS;j++){
-        //     playerBets[j][0] = (rand() * MAXBETINCREMENT) * BETINCREMENTS;//assign the trips bet
-        //     playerBets[j][1] = (rand() * MAXBETINCREMENT) * BETINCREMENTS;//assign the ante and blind bet
-        // }
+        for(int j = 0;j<NUMPLAYERS;j++){
+            playerBets[j][0] = 10;//(rand() % MAXBETINCREMENT) * BETINCREMENTS;//assign the ante and blind bet 
+            playerBets[j][1] = 10;// (rand() % MAXBETINCREMENT) * BETINCREMENTS;//assign the trips bet
+        }
         //deal all the cards
         vector<int> deck;
         for(int j = 0;j<52;j++) deck.push_back(j);
-        
         shuffle(begin(deck), end(deck), rng);
         vector<int> dealerHand;
         vector<int> table;
         dealCards(deck,table,5);
         dealCards(deck,dealerHand,2);
         vector<vector<int>> playerHands(NUMPLAYERS, vector<int>());
+        //bets preflop
         for(int j = 0;j<NUMPLAYERS;j++){
             dealCards(deck, playerHands[j], 2);
+            bool suited = (playerHands[j][0]/13 == playerHands[j][1]/13);//check whether or not the hand is suited
+            if(suited) playerBets[j][2] = playerBets[j][0]*suitedRange[playerHands[j][0]%13][playerHands[j][1]%13];
+            else playerBets[j][2] = playerBets[j][0]*nonSuitedRange[playerHands[j][0]%13][playerHands[j][1]%13];
+        }
+        //bets on flop
+        for(int j = 0;j<NUMPLAYERS;j++){
+            if(playerBets[j][2] == 0){
+                vector<int> temp = playerHands[j];
+                temp.insert(temp.end(),table.begin(),table.begin()+3);
+                vector<int> numsHand;
+                for(int k = 0;k<temp.size();k++){
+                    numsHand.push_back(temp[k]%13);
+                }
+                vector<int> numsOnBoard;
+                for(int k = 2;k<5;k++) numsOnBoard.push_back(numsHand[k]);
+                //check for flush draw
+                if(checkFlushDraw(temp)){
+                    playerBets[j][2] = 2*playerBets[j][0];
+                } 
+                //check for 2 pair or better
+                if(handValue(temp, vector<int>({})).first >=2) playerBets[j][2] = 2*playerBets[j][0];
+                //check for pair of 3's or better with 1 in hole
+                if(checkPair(numsOnBoard) == "-1" && checkPair(numsHand) != "-1")
+                    playerBets[j][2] = 2*playerBets[j][0];
+            }
+        }
+        //bets on river
+        for(int j = 0;j<NUMPLAYERS;j++){
+            if(playerBets[j][2] == 0){
+                vector<int> temp = playerHands[j];
+                temp.insert(temp.end(),table.begin(),table.end());
+                vector<int> numsHand;
+                for(int k = 0;k<temp.size();k++){
+                    numsHand.push_back(temp[k]%13);
+                }
+                vector<int> numsOnBoard;
+                for(int k = 2;k<7;k++) numsOnBoard.push_back(numsHand[k]);
+                //check for 2 pair or better
+                if(handValue(temp, vector<int>({})).first >=2) playerBets[j][2] = playerBets[j][0];
+                //check for pair of with 1 in hole
+                else if(checkPair(numsOnBoard) == "-1" && checkPair(numsHand) != "-1")
+                    playerBets[j][2] = playerBets[j][0];
+            }
         }
         pair<int,string> dH = handValue(table, dealerHand);
         cout << "-----HAND #" << i << "-----" << endl;
@@ -312,23 +401,40 @@ int main(){
         }
         cout << endl << endl;
         //pay out players
+        handsOverWholeSim[dH.first]++;
         for(int j = 0;j<NUMPLAYERS;j++){
             //figure out when/if the player bets
             //figure out who has a better hand, player or dealer
             pair<int,string> pH = handValue(table, playerHands[j]);
+            handsOverWholeSim[pH.first]++;
             cout << "player #" << j << "hand = " << numToCardConversion[playerHands[j][0]] + numToCardConversion[playerHands[j][1]] << endl;
             if(pH == dH){
-                cout << "Player pushes with: " << numToHandConversion[pH.first] << endl;
+                cout << "Player pushes with: " << numToHandConversion[pH.first] << endl; 
             }
             else if(pH > dH){
+                playerStks[j] += playerBets[j][2];
+                if(dH.first >=1) playerStks[j] += playerBets[j][0];
+                playerStks[j] += playerBets[j][0]*payoutBlind[pH.first];
                 cout << "Player wins with: " << numToHandConversion[pH.first] << endl;
             }
             else{
+                playerStks[j] -= (playerBets[j][0]*2 + playerBets[j][2]);
                 cout << "Player loses with: " << numToHandConversion[pH.first] << endl;
             }
+            playerStks[j] += playerBets[j][1]*payoutTrips[pH.first];
+            playerBets[j].clear();
             cout << endl;
         }
     }
+    for(int i = 0;i<handsOverWholeSim.size();i++){
+        cout << numToHandConversion[i] << ":" << handsOverWholeSim[i] << endl;
+    }
+    int start = 8000;
+    for(int i = 0;i<NUMPLAYERS;i++){
+        cout << "Player #" << i << ": " << playerStks[i] << endl;
+        start -= playerStks[i];
+    }
+    cout << "--------PROFIT: " << start << endl;
 
     return 0;
 }
@@ -354,7 +460,7 @@ pair<int,string> handValue(vector<int> table, vector<int> holeCards){
     sevenCardHand.insert(sevenCardHand.end(), holeCards.begin(), holeCards.end());
     vector<int> suitsHand = sevenCardHand;
     vector<int> numsHand = sevenCardHand;
-    for(int i = 0;i<7;i++){
+    for(int i = 0;i<sevenCardHand.size();i++){
         suitsHand[i] /= 13;
         numsHand[i] %= 13;
     }
@@ -364,9 +470,12 @@ pair<int,string> handValue(vector<int> table, vector<int> holeCards){
     string tieBreaker;
 
     //check for straight flush return 8
-    if((tieBreaker = checkStraightFlush(sevenCardHand)) != "-1") return make_pair(8, convertTieBreaker(tieBreaker));
+    if((tieBreaker = checkStraightFlush(sevenCardHand)) != "-1"){
+        if(tieBreaker[0] + '0'== ';') return make_pair(9, convertTieBreaker(tieBreaker));
+        else return make_pair(8, convertTieBreaker(tieBreaker));
+    }
     //check for quads return 7
-    if((tieBreaker = checkQuads(sevenCardHand)) != "-1") return make_pair(7, convertTieBreaker(tieBreaker));
+    if((tieBreaker = checkQuads(numsHand)) != "-1") return make_pair(7, convertTieBreaker(tieBreaker));
     //check for boat return 6
     if((tieBreaker = checkFullHouse(numsHand)) != "-1") return make_pair(6, convertTieBreaker(tieBreaker));
     //check for flush return 5

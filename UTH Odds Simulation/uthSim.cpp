@@ -5,10 +5,11 @@
 #include <algorithm>
 #include <stack>
 #include <random>
+#include <string>
 
 using namespace std;
 
-const long long SIMS = 5;
+const long long SIMS = 20;
 int BANKROLL = 21000;
 int NUMPLAYERS = 5;
 int MAXSTACK = 2000;
@@ -97,8 +98,16 @@ string checkPair(vector<int> numsHand){
             pair += (char) numsHand[i];
             theresAPair = true;
         }
-        else if(highCards.length() < 3 && pair.length() >0 && ((char) prev) !=  pair[0]){
-            highCards += (char) prev;
+        else if(highCards.length() < 3 ){
+            if(pair.length() > 0){
+                if((char) prev !=  pair[0]){
+                    highCards += (char) prev;
+                }
+            }
+            else{
+                highCards += (char) prev;
+            }
+            
         }
         prev = numsHand[i];
     }
@@ -232,40 +241,36 @@ string checkTrips(vector<int> numsHand){
 }
 string checkFullHouse(vector<int> numsHand){
     int prev = numsHand[numsHand.size()-1];
-    string card1 = "";
-    string card2 = "";
+    map<int,int> repeatingCards;
+    string toReturn = "";
+    vector<int> threeOfAKind;
+    vector<int> pair;
     for(int i = numsHand.size()-2;i>=0;i--){
         if(numsHand[i] == prev){
-            if(card1.length() >= 0 && card1[0] == (char) numsHand[i]){
-                card1 += (char) prev;
-            }
-            else if(card2.length() >= 0 && card2[0] == (char) numsHand[i]){
-                card2 += (char) prev;
-            }
-            else if(card1.length() == 0){
-                card1 += (char) prev;
-                card1 += (char) prev;
+            if(repeatingCards.find(numsHand[i]) != repeatingCards.end()){
+                repeatingCards[numsHand[i]]++;
+                if(repeatingCards[numsHand[i]] == 3){
+                    threeOfAKind.push_back(numsHand[i]);
+                }
+                else if(repeatingCards[numsHand[i]] == 2){
+                    pair.push_back(numsHand[i]);
+                }
             }
             else{
-                card2 += (char) prev;
-                card2 += (char) prev;
+                repeatingCards[numsHand[i]] = 1;
             }
         }
         prev = numsHand[i];
     }
-
-    if(card1.length()+card2.length() >=5){
-        if(card1.length() == card2.length()){
-            if(card1 > card2) return card1 + card2.substr(1);
-            else return card2 + card1.substr(1);
+    if ((!threeOfAKind.empty() && !pair.empty()) || threeOfAKind.size() > 1) {
+        if (threeOfAKind.size() > 1) {
+            if(pair[0]>threeOfAKind[1]) return to_string((char)threeOfAKind[0] + (char) pair[0]);
         }
-        else if(card1.length() > card2.length()){
-            return card1 + card2;
-        }
-        else{
-            return card2 + card1;
+        else {
+            return to_string((char)threeOfAKind[0] + (char) threeOfAKind[1]);
         }
     }
+
     return "-1";
 }
 
@@ -312,7 +317,10 @@ int main(){
             //figure out who has a better hand, player or dealer
             pair<int,string> pH = handValue(table, playerHands[j]);
             cout << "player #" << j << "hand = " << numToCardConversion[playerHands[j][0]] + numToCardConversion[playerHands[j][1]] << endl;
-            if(pH > dH){
+            if(pH == dH){
+                cout << "Player pushes with: " << numToHandConversion[pH.first] << endl;
+            }
+            else if(pH > dH){
                 cout << "Player wins with: " << numToHandConversion[pH.first] << endl;
             }
             else{
@@ -360,7 +368,7 @@ pair<int,string> handValue(vector<int> table, vector<int> holeCards){
     //check for quads return 7
     if((tieBreaker = checkQuads(sevenCardHand)) != "-1") return make_pair(7, convertTieBreaker(tieBreaker));
     //check for boat return 6
-    if((tieBreaker = checkFullHouse(sevenCardHand)) != "-1") return make_pair(6, convertTieBreaker(tieBreaker));
+    if((tieBreaker = checkFullHouse(numsHand)) != "-1") return make_pair(6, convertTieBreaker(tieBreaker));
     //check for flush return 5
     if((tieBreaker = checkFlush(sevenCardHand, suitsHand)) != "-1") return make_pair(5, convertTieBreaker(tieBreaker));
     //check for straight return 4

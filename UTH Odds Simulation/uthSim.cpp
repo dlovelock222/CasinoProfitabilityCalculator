@@ -11,13 +11,14 @@
 
 using namespace std;
 
-const long long SIMS = 40;
+const long long SIMS = 20000;
 const int BANKROLL = 21000;
 const int NUMPLAYERS = 4;
 const int MAXSTACK = 2000;
 const int NUMCARDS = 52;
 const int BETINCREMENTS = 5;
 const int MAXBETINCREMENT = 10;
+const int DROP = 4;
 const vector<string> numToCardConversion = {
  "2s","3s","4s","5s","6s","7s","8s","9s","10s","Js","Qs","Ks","As",
  "2d","3d","4d","5d","6d","7d","8d","9d","10d","Jd","Qd","Kd","Ad",
@@ -30,36 +31,65 @@ const vector<string> numToHandConversion = {
 const vector<double> payoutBlind = {0,0,0,0,1,1.5,3,10,50,500};
 const vector<int> payoutTrips = {-1,-1,-1,3,4,7,8,30,40,50};
 vector<vector<int>> suitedRange{
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,4,4,4,4,4},
-    {1,1,1,1,1,1,1,4,4,4,4,4,4},
-    {1,1,1,1,1,1,1,4,4,4,4,4,4},
-    {1,1,1,1,1,1,1,4,4,4,4,4,4}
-};
-vector<vector<int>> nonSuitedRange{
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,4,4,4,4},
-    {1,1,1,1,1,1,1,4,4,4,4,4,4},
-    {1,1,1,4,4,4,4,4,4,4,4,4,4},
+    {0,0,0,0,0,0,0,0,0,0,0,4,4},
+    {0,4,0,0,0,0,0,0,0,0,0,4,4},
+    {0,0,4,0,0,0,0,0,0,0,0,4,4},
+    {0,0,0,4,0,0,0,0,0,0,0,4,4},
+    {0,0,0,0,4,0,0,0,0,0,0,4,4},
+    {0,0,0,0,0,4,0,0,0,0,4,4,4},
+    {0,0,0,0,0,0,4,0,0,0,4,4,4},
+    {0,0,0,0,0,0,0,4,0,4,4,4,4},
+    {0,0,0,0,0,0,0,0,4,4,4,4,4},
+    {0,0,0,0,0,0,0,4,4,4,4,4,4},
+    {0,0,0,0,4,4,4,4,4,4,4,4,4},
+    {4,4,4,4,4,4,4,4,4,4,4,4,4},
     {4,4,4,4,4,4,4,4,4,4,4,4,4}
 };
-
+vector<vector<int>> nonSuitedRange{
+    {0,0,0,0,0,0,0,0,0,0,0,0,4},
+    {0,4,0,0,0,0,0,0,0,0,0,0,4},
+    {0,0,4,0,0,0,0,0,0,0,0,0,4},
+    {0,0,0,4,0,0,0,0,0,0,0,4,4},
+    {0,0,0,0,4,0,0,0,0,0,0,4,4},
+    {0,0,0,0,0,4,0,0,0,0,0,4,4},
+    {0,0,0,0,0,0,4,0,0,0,4,4,4},
+    {0,0,0,0,0,0,0,4,0,0,4,4,4},
+    {0,0,0,0,0,0,0,0,4,4,4,4,4},
+    {0,0,0,0,0,0,0,0,0,4,4,4,4},
+    {0,0,0,0,0,0,0,4,4,4,4,4,4},
+    {0,0,0,4,4,4,4,4,4,4,4,4,4},
+    {4,4,4,4,4,4,4,4,4,4,4,4,4}
+};
+vector<vector<int>> suitedRange2{
+    {0,0,0,0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,4,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,4,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,4,0,0,0,4,0},
+    {0,0,0,0,0,0,0,0,4,4,4,4,4},
+    {0,0,0,0,0,0,0,0,4,4,4,4,4},
+    {0,0,0,0,0,0,0,0,4,4,4,4,4},
+    {0,0,0,0,0,0,0,4,4,4,4,4,4},
+    {0,0,0,0,0,0,0,0,4,4,4,4,4}
+};
+vector<vector<int>> nonSuitedRange2{
+    {0,0,0,0,0,0,0,0,0,0,0,0,0},
+    {0,4,0,0,0,0,0,0,0,0,0,0,0},
+    {0,0,4,0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,4,0,0,0,0,0,0,0,0,0},
+    {0,0,0,0,4,0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,4,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,4,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,4,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0,4,0,0,4,4},
+    {0,0,0,0,0,0,0,0,0,4,4,4,4},
+    {0,0,0,0,0,0,0,0,0,4,4,4,4},
+    {0,0,0,0,0,0,0,0,4,4,4,4,4},
+    {0,0,0,0,0,0,0,0,4,4,4,4,4}
+};
 
 void dealCards(vector<int>&, vector<int>&, int);
 pair<int,string> handValue(vector<int>, vector<int>);
@@ -322,19 +352,16 @@ bool checkFlushDraw(vector<int> floppedHand){
 int main(){
     vector<int> handsOverWholeSim = {0,0,0,0,0,0,0,0,0,0};
     vector<int> playerStks(NUMPLAYERS,2000);
-    long int totalOnTable = 0;
-    // for(int i = 0;i<NUMPLAYERS;i++){
-    //     int x = MAXSTACK;
-    //     playerStks.push_back(x);
-    //     totalOnTable += x;
-    // }
+    int moneyWagered = 0;
+    int numWins = 0, numLosses = 0, numDraws = 0, numFolds = 0, savedDueToMaxPayout = 0, totalBusts = 0;
     vector<vector<int>> playerBets(NUMPLAYERS, vector<int>(3,0));
     auto rng = default_random_engine {time(0)};
     for(int i = 0;i<SIMS;++i){
         //place player initial bets (trips and anti/blind)
         for(int j = 0;j<NUMPLAYERS;j++){
-            playerBets[j][0] = 10;//(rand() % MAXBETINCREMENT) * BETINCREMENTS;//assign the ante and blind bet 
+            playerBets[j][0] = 15;//(rand() % MAXBETINCREMENT) * BETINCREMENTS;//assign the ante and blind bet 
             playerBets[j][1] = 10;// (rand() % MAXBETINCREMENT) * BETINCREMENTS;//assign the trips bet
+            moneyWagered+=40;
         }
         //deal all the cards
         vector<int> deck;
@@ -349,8 +376,14 @@ int main(){
         for(int j = 0;j<NUMPLAYERS;j++){
             dealCards(deck, playerHands[j], 2);
             bool suited = (playerHands[j][0]/13 == playerHands[j][1]/13);//check whether or not the hand is suited
-            if(suited) playerBets[j][2] = playerBets[j][0]*suitedRange[playerHands[j][0]%13][playerHands[j][1]%13];
-            else playerBets[j][2] = playerBets[j][0]*nonSuitedRange[playerHands[j][0]%13][playerHands[j][1]%13];
+            if(suited){
+                playerBets[j][2] = playerBets[j][0]*suitedRange2[playerHands[j][0]%13][playerHands[j][1]%13];
+                moneyWagered += playerBets[j][0]*suitedRange2[playerHands[j][0]%13][playerHands[j][1]%13];
+            } 
+            else{
+                playerBets[j][2] = playerBets[j][0]*nonSuitedRange2[playerHands[j][0]%13][playerHands[j][1]%13];
+                moneyWagered += playerBets[j][0]*nonSuitedRange2[playerHands[j][0]%13][playerHands[j][1]%13];
+            } 
         }
         //bets on flop
         for(int j = 0;j<NUMPLAYERS;j++){
@@ -366,12 +399,18 @@ int main(){
                 //check for flush draw
                 if(checkFlushDraw(temp)){
                     playerBets[j][2] = 2*playerBets[j][0];
+                    moneyWagered+= 2*playerBets[j][0];
                 } 
                 //check for 2 pair or better
-                if(handValue(temp, vector<int>({})).first >=2) playerBets[j][2] = 2*playerBets[j][0];
-                //check for pair of 3's or better with 1 in hole
-                if(checkPair(numsOnBoard) == "-1" && checkPair(numsHand) != "-1")
+                if(handValue(temp, vector<int>({})).first >=2){
                     playerBets[j][2] = 2*playerBets[j][0];
+                    moneyWagered+= 2*playerBets[j][0];
+                } 
+                //check for pair of 3's or better with 1 in hole
+                if(checkPair(numsOnBoard) == "-1" && checkPair(numsHand) != "-1"){
+                    playerBets[j][2] = 2*playerBets[j][0];
+                    moneyWagered+= 2*playerBets[j][0];
+                }
             }
         }
         //bets on river
@@ -386,10 +425,15 @@ int main(){
                 vector<int> numsOnBoard;
                 for(int k = 2;k<7;k++) numsOnBoard.push_back(numsHand[k]);
                 //check for 2 pair or better
-                if(handValue(temp, vector<int>({})).first >=2) playerBets[j][2] = playerBets[j][0];
-                //check for pair of with 1 in hole
-                else if(checkPair(numsOnBoard) == "-1" && checkPair(numsHand) != "-1")
+                if(handValue(temp, vector<int>({})).first >=1){
                     playerBets[j][2] = playerBets[j][0];
+                    moneyWagered += playerBets[j][0];
+                } 
+                //check for pair of with 1 in hole
+                else if(checkPair(numsOnBoard) == "-1" && checkPair(numsHand) != "-1"){
+                    moneyWagered += playerBets[j][0];
+                    playerBets[j][2] = playerBets[j][0];
+                } 
             }
         }
         pair<int,string> dH = handValue(table, dealerHand);
@@ -402,28 +446,53 @@ int main(){
         cout << endl << endl;
         //pay out players
         handsOverWholeSim[dH.first]++;
+        int profitPerRound = 0;
         for(int j = 0;j<NUMPLAYERS;j++){
             //figure out when/if the player bets
             //figure out who has a better hand, player or dealer
             pair<int,string> pH = handValue(table, playerHands[j]);
+            int stackChange  = 0;
             handsOverWholeSim[pH.first]++;
             cout << "player #" << j << "hand = " << numToCardConversion[playerHands[j][0]] + numToCardConversion[playerHands[j][1]] << endl;
-            if(pH == dH){
+            if(playerBets[j][2] == 0){
+                numFolds++;
+                playerStks[j] -= playerBets[j][0]*2;
+                stackChange -= playerBets[j][0]*2;
+                cout << "Player folds with: " << numToHandConversion[pH.first] << endl;
+            }
+            else if(pH == dH){
+                numDraws++;
                 cout << "Player pushes with: " << numToHandConversion[pH.first] << endl; 
             }
             else if(pH > dH){
+                numLosses++;
                 playerStks[j] += playerBets[j][2];
-                if(dH.first >=1) playerStks[j] += playerBets[j][0];
+                stackChange  += playerBets[j][2];
+                if(dH.first >=1){
+                    playerStks[j] += playerBets[j][0];
+                    stackChange  += playerBets[j][0];
+                } 
                 playerStks[j] += playerBets[j][0]*payoutBlind[pH.first];
+                stackChange  += playerBets[j][0]*payoutBlind[pH.first];
                 cout << "Player wins with: " << numToHandConversion[pH.first] << endl;
             }
             else{
+                numWins++;
                 playerStks[j] -= (playerBets[j][0]*2 + playerBets[j][2]);
+                stackChange -= (playerBets[j][0]*2 + playerBets[j][2]);
                 cout << "Player loses with: " << numToHandConversion[pH.first] << endl;
             }
             playerStks[j] += playerBets[j][1]*payoutTrips[pH.first];
+            stackChange += playerBets[j][1]*payoutTrips[pH.first];
+            profitPerRound -=stackChange;
+            cout << "stack size: " << playerStks[j] << endl;
+            cout << "stack change: " << stackChange << endl;
             playerBets[j].clear();
             cout << endl;
+        }
+        if(profitPerRound < -4000){
+            totalBusts++;
+            savedDueToMaxPayout += (-1*profitPerRound+4000);
         }
     }
     for(int i = 0;i<handsOverWholeSim.size();i++){
@@ -434,7 +503,15 @@ int main(){
         cout << "Player #" << i << ": " << playerStks[i] << endl;
         start -= playerStks[i];
     }
-    cout << "--------PROFIT: " << start << endl;
+    cout << "--------PROFIT: " << start - (DROP*SIMS) + savedDueToMaxPayout<< endl;
+    cout << "WINS: " << numWins << endl;
+    cout << "LOSSES: " << numLosses << endl;
+    cout << "DRAWS: " << numDraws << endl;
+    cout << "FOLDS: " << numFolds << endl;
+    cout << "Money Wagered: " << moneyWagered << endl;
+    cout << "Money Saved because of Max Payout: " << savedDueToMaxPayout << endl;
+    cout << "Busts: " << totalBusts << endl;
+    cout << "Total Drop: " << DROP*SIMS << endl;
 
     return 0;
 }

@@ -91,7 +91,6 @@ def create_shoe():
     random.shuffle(deck)
     return deck
 
-
 def calculate_drop(total_bet):
     drop = 0
     if total_bet < 25:
@@ -103,9 +102,6 @@ def calculate_drop(total_bet):
     else:
         drop = -5
     return drop
-
-
-
 
 # Function to calculate the value of a hand PLAYER
 def calculate_hand_value(hand):
@@ -150,7 +146,6 @@ def generate_bj_bet_size():
     random_number = random.choices(list(buster_bet_size.keys()), weights=list(buster_bet_size.values()))[0]
     return(random_number)
 
-
 def generate_buster_bet_size():
     buster_bet_size = {
     0: 0.2,
@@ -163,8 +158,6 @@ def generate_buster_bet_size():
 
     random_number = random.choices(list(buster_bet_size.keys()), weights=list(buster_bet_size.values()))[0]
     return(random_number)
-
-
 
 #if blackjack
 def is_blackjack(hand):
@@ -197,6 +190,7 @@ def play_blackjack():
     #these are statistics based on the entire shoe
 
     number_hands = 0
+    number_player_hands = 0
     total_drop = 0
     total_profit = 0
     total_buster_profit = 0
@@ -207,11 +201,7 @@ def play_blackjack():
     hand_results = []
 
     
-
-
-
     # FUNCTIONS THAT NEED TO BE NESTED BECAUSE THEY USE "SHOE"
-
 
     def basic_strategy(player_hands, player_hand_value, dealer_hand):
 
@@ -254,7 +244,6 @@ def play_blackjack():
     def bs_pairs(player_hand, player_hand_value, dealer_up):
         return basic_strategy_pair_array[player_hand_value[0]][dealer_upcards.index(dealer_up)]
         
-    
     def bs_soft_totals(player_hand, player_hand_value, dealer_up):
         # Simulate a decision based on player value and dealer up card
         decision = basic_strategy_soft_array[player_hand_value[0]][dealer_upcards.index(dealer_up)]
@@ -272,7 +261,6 @@ def play_blackjack():
 
         return(player_hand, player_hand_value, decision)
     
-
     def bs_hard_totals(player_hand, player_hand_value, dealer_up):
 
         # Simulate a decision based on player value and dealer up card
@@ -299,8 +287,9 @@ def play_blackjack():
     #create shoe
     deck = create_shoe()
     not_empty = True
+    hand_counter = 0
 
-    while not_empty:
+    while hand_counter < TOTAL_HAND:
 
         number_blackjacks = 0
         number_wins = 0
@@ -313,7 +302,6 @@ def play_blackjack():
 
         # Dealer's hand
         dealer_hand = [deck.pop(), deck.pop()]
-        # TEST BLACKJACK 
         #dealer_hand = ['10','K']
         dealer_hand_value = calculate_hand_value(dealer_hand)
         while dealer_hand_value[0] < 17 or (dealer_hand_value[0] == 17 and dealer_hand_value[1] == 'Soft'):
@@ -389,7 +377,6 @@ def play_blackjack():
 
 
                 if dealer_hand_value[0] > 21:
-                    #print("BUSTER BET PAYS!")
                     buster_profit -= buster_payout_calc(player_buster_bet, dealer_hand)   #ONLY CASE WHERE BUSTER PAYS!
                 else:
                     buster_profit += player_buster_bet
@@ -409,57 +396,60 @@ def play_blackjack():
 
             number_player += 1
 
-        house_balance += buster_profit
-        house_balance += bj_profit  
-        drop = calculate_drop(total_bet)  
-        house_balance += drop
-
-
-        
-
-        print("Dealer hand:", dealer_hand, "Value:", dealer_hand_value[1], dealer_hand_value[0])
-
-
-
-        print(f"BJ Win/Loss: ${bj_profit}")
-        print(f"Buster Win/Loss: ${buster_profit}")
-        print(f"Drop: ${drop}")
-        print(f"Bank Win/Loss: ${house_balance}")
-
-
-
-        print("Blackjacks:", number_blackjacks)
-        print("Wins:", number_wins)
-        print("Losses:", number_losses)
-        print("Pushes:", number_push)
-        print("BJ Pushes:", number_bj_push)
-        print("==================================")
-        print("===========HAND OVER==========")
-        print("==================================")
-
-
-        # SHOE STATS
-        if dealer_hand_value[0] > 21:
-            bust_cards.append(len(dealer_hand)) # this means he didn't bust!
-        else:
-            bust_cards.append(0)
-
-        bj_results.append(bj_profit)
-        buster_results.append(buster_profit)
-        hand_results.append(bj_profit + buster_profit - drop)
-
-        total_drop += drop
         number_hands += 1
-        total_buster_profit += buster_profit
-        total_bj_profit += bj_profit
-        total_profit += (total_buster_profit + total_bj_profit - total_drop)
+
+        hand_counter += 1
+
+        if hand_counter % 4 == 0 or hand_counter % 4 == 1: #THIS MEANS IT"S PLAYER! ALTERNATE EVERY TWO HANDS
+
+            house_balance += buster_profit
+            house_balance += bj_profit  
+            drop = calculate_drop(total_bet)  
+            house_balance += drop
+
+            print("Dealer hand:", dealer_hand, "Value:", dealer_hand_value[1], dealer_hand_value[0])
+
+            print(f"BJ Win/Loss: ${bj_profit}")
+            print(f"Buster Win/Loss: ${buster_profit}")
+            print(f"Drop: ${drop}")
+            print(f"Bank Win/Loss: ${house_balance}")
+
+            print("Blackjacks:", number_blackjacks)
+            print("Wins:", number_wins)
+            print("Losses:", number_losses)
+            print("Pushes:", number_push)
+            print("BJ Pushes:", number_bj_push)
+            print("==================================")
+            print("===========HAND OVER==========")
+            print("==================================")
+
+
+            # SHOE STATS
+            if dealer_hand_value[0] > 21:
+                bust_cards.append(len(dealer_hand)) # this means he didn't bust!
+            else:
+                bust_cards.append(0)
+
+            bj_results.append(bj_profit)
+            buster_results.append(buster_profit)
+            hand_results.append(bj_profit + buster_profit - drop)
+
+            total_drop += drop
+            number_player_hands += 1
+            total_buster_profit += buster_profit
+            total_bj_profit += bj_profit
+            total_profit += (total_buster_profit + total_bj_profit - total_drop)
 
 
         if len(deck) < 40:
-            print("EMPTY SHOE, RESHUFFLE! \n\n")
-            not_empty = False
+            print("\n\nEMPTY SHOE, RESHUFFLE! \n\n")
+            deck = create_shoe()
+            #not_empty = False
+
+
+
     print("Summary Statistics: \n")
-    print("Total # Hands:", number_hands)
+    print("Total # Hands:",number_player_hands,"out of", number_hands, "total")
     print("Total $ Dropped:", total_drop)
     print("Total Buster Profit: $", sum(buster_results))
     print("Total BJ Profit: $", sum(bj_results))

@@ -10,6 +10,8 @@ import time
 
 # Define table rules and people
 NUM_PLAYERS = int(input("Enter in # of players: "))
+BJ_CHIPS = int(input("Enter BJ $ on table: "))
+BUSTER_CHIPS = int(input("Enter Buster $ on table: "))
 #NUM_PLAYERS = 5
 BLACKJACK_PAYOUT = 1.2
 MAX_SPLITS_ALLOWED = 3
@@ -17,6 +19,7 @@ DECKS = 6
 
 #CHANGE THESE TO RUN DIFF SIM
 HANDS_IN_NIGHT = int(input("Enter in how many hands per night including dealer: "))
+HOURS = int(input("Enter in # hours at table: "))
 SIM_NIGHTS = int(input("Enter the number of simulation nights: "))
 printing_nights = input("Print nightly results? (Yes/No): ").lower() == 'yes'
 #HANDS_IN_NIGHT = 200 #INCLUDING DEALER
@@ -120,7 +123,7 @@ def calculate_drop(total_bet):
     elif total_bet >= 25 and total_bet <= 300:
         drop = -3
     elif total_bet >= 300 and total_bet <= 500:
-        drop = -4
+        drop = -7
     else:
         drop = -5
     return drop
@@ -152,36 +155,38 @@ def calculate_hand_value(hand):
     return value, hard_or_soft
 
 def generate_bj_bet_size():
-    buster_bet_size = {
-    100: 1
-    # 5: 0.2,
-    # 10: 0.1,
-    # 15: 0.1,
-    # 20: 0.1,
-    # 30: 0.1,
-    # 40: 0.1,
-    # 50: 0.1,
-    # 60: 0.1,
-    # 80: 0.05,
-    # 100: 0.05
-    }
+    bj_bet_size = BJ_CHIPS / NUM_PLAYERS
+    # buster_bet_size = {
+    # 100: 1
+    # # 5: 0.2,
+    # # 10: 0.1,
+    # # 15: 0.1,
+    # # 20: 0.1,
+    # # 30: 0.1,
+    # # 40: 0.1,
+    # # 50: 0.1,
+    # # 60: 0.1,
+    # # 80: 0.05,
+    # # 100: 0.05
+    # }
     
-    random_number = random.choices(list(buster_bet_size.keys()), weights=list(buster_bet_size.values()))[0]
-    return(random_number)
+    #random_number = random.choices(list(bj_bet_size.keys()), weights=list(bj_bet_size.values()))[0]
+    return(bj_bet_size)
 
 def generate_buster_bet_size():
-    buster_bet_size = {
-    50: 1
-    # 0: 0.2,
-    # 5: 0.2,
-    # 10: 0.3,
-    # 15: 0.1,
-    # 20: 0.1,
-    # 30: 0.1
-    }
+    buster_bet_size = BUSTER_CHIPS / NUM_PLAYERS
+    # buster_bet_size = {
+    # 50: 1
+    # # 0: 0.2,
+    # # 5: 0.2,
+    # # 10: 0.3,
+    # # 15: 0.1,
+    # # 20: 0.1,
+    # # 30: 0.1
+    # }
 
-    random_number = random.choices(list(buster_bet_size.keys()), weights=list(buster_bet_size.values()))[0]
-    return(random_number)
+    #random_number = random.choices(list(buster_bet_size.keys()), weights=list(buster_bet_size.values()))[0]
+    return(buster_bet_size)
 
 def is_blackjack(hand):
     return len(hand) == 2 and 'A' in hand and any(card in ['10', 'J', 'Q', 'K'] for card in hand)
@@ -515,7 +520,8 @@ def play_blackjack():
                     STACK = BANK_PUSH
 
                 elif hand_profit > 0 and STACK < BANK_PUSH:
-                    STACK += hand_profit
+                    STACK = STACK
+                    #TOP OFF OR DID I PROFIT EXTRA
 
                 elif hand_profit < 0:
                     #NEED TO CHECK MAX LOSS HERE!
@@ -630,16 +636,20 @@ def play_blackjack():
     # Create a DataFrame
     df = pd.DataFrame(data)
     df.set_index("Night", inplace=True)
-        # endregion
+    df = df.sort_values(by='Total Profits', ascending=False)
+        
     print(df)
 
     # Calculate the count of bankrupts
     print("=============================\nSummary Statistics: \n")
+    print("Average BJ Bet Size: ", BJ_CHIPS / NUM_PLAYERS)
+    print("Average Buster Bet Size: ", BUSTER_CHIPS / NUM_PLAYERS)
     bankrupt_count = df["Bankrupt?"].sum()
     bankrupt_percentage = (bankrupt_count / SIM_NIGHTS) * 100
     print(f"Bankrupts: {bankrupt_count} out of {SIM_NIGHTS} ({bankrupt_percentage:.2f}%)")
     average_profit = df["Total Profits"].mean()
     print(f"Average profit per night: ${average_profit:.2f}\n")
-
+    print(f"Average profit per hour: ${average_profit / HOURS:.2f}/hour\n")
+    # endregion
 # Start the game
 play_blackjack()

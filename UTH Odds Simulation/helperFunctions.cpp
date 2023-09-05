@@ -1,9 +1,8 @@
 #include "helperFunctions.h"
 
-using namespace std;
 
-string checkFlush(vector<int> realHand, vector<int> suitsHand){
-    //the vector that gets passed in is already sorted and has already been divided by 13
+string checkFlush(std::vector<int> realHand, std::vector<int> suitsHand){
+    //the std::vector that gets passed in is already sorted and has already been divided by 13
     int count = 1, currMax = 1;
     int prev = suitsHand[0];
     int flushSuit = -1;
@@ -27,7 +26,7 @@ string checkFlush(vector<int> realHand, vector<int> suitsHand){
     }
     return toReturn;
 }
-string checkStraight(vector<int> numsHand){
+string checkStraight(std::vector<int> numsHand){
     for(int i = 0;i<numsHand.size();i++){
         if(numsHand[i] == 12) numsHand.push_back(-1);
     }
@@ -52,7 +51,7 @@ string checkStraight(vector<int> numsHand){
     }
     return "-1";
 }
-string checkPair(vector<int> numsHand){
+string checkPair(std::vector<int> numsHand){
     int prev = numsHand[numsHand.size()-1];
     string highCards = "";
     string pair = "";
@@ -78,7 +77,7 @@ string checkPair(vector<int> numsHand){
     if(theresAPair) return pair + highCards;
     return "-1";
 }
-string checkQuads(vector<int> numsHand){
+string checkQuads(std::vector<int> numsHand){
     int count = 1, currMax = 1;
     int prev = numsHand[numsHand.size()-1];
     string highCard = "";
@@ -110,7 +109,7 @@ string checkQuads(vector<int> numsHand){
     if(hitQuads) return quadCard + highCard;
     return "-1";
 }
-string checkTwoPair(vector<int> numsHand){
+string checkTwoPair(std::vector<int> numsHand){
     int prev = numsHand[numsHand.size()-1];
     string highCard = "";
     string pair1 = "";
@@ -152,8 +151,8 @@ string checkTwoPair(vector<int> numsHand){
     if(hitTwoPair) return pair1 + pair2 + highCard;
     return "-1";
 }
-string checkStraightFlush(vector<int> realHand){
-    vector<vector<int>> numsBySuits(4,vector<int>());
+string checkStraightFlush(std::vector<int> realHand){
+    std::vector<std::vector<int>> numsBySuits(4,std::vector<int>());
     for(int i = 0;i<realHand.size();i++){
         int num = realHand[i]%13;
         int suit = realHand[i]/13;
@@ -172,7 +171,7 @@ string checkStraightFlush(vector<int> realHand){
     }
     return "-1";
 }
-string checkTrips(vector<int> numsHand){
+string checkTrips(std::vector<int> numsHand){
     int count = 1;
     int prev = numsHand[numsHand.size()-1];
     string highCards = "";
@@ -203,7 +202,7 @@ string checkTrips(vector<int> numsHand){
     if(theresTrips) return trips + highCards;
     return "-1";
 }
-string checkFullHouse(vector<int> numsHand){
+string checkFullHouse(std::vector<int> numsHand){
     std::map<int, int> cardCount;
     std::vector<int> threeOfAKind;
     std::vector<int> pair;
@@ -225,7 +224,7 @@ string checkFullHouse(vector<int> numsHand){
     }
 
     if (!threeOfAKind.empty()) {
-        std::sort(threeOfAKind.begin(), threeOfAKind.end(), std::greater<int>());
+        sort(threeOfAKind.begin(), threeOfAKind.end(), std::greater<int>());
         int maxThree = threeOfAKind[0];
         threeOfAKind.clear();
 
@@ -241,4 +240,16 @@ string checkFullHouse(vector<int> numsHand){
     }
 
     return "-1";
+}
+bool checkFlushDraw(std::vector<int> floppedHand){
+    std::vector<int> suits(4,0);
+    for(int i = 0;i<floppedHand.size();i++){
+        suits[floppedHand[i] / 13]++;
+    }
+    for(int i = 0;i<4;i++){
+        if(suits[i] == 4){
+            if((floppedHand[0]/4 == i && floppedHand[0]-(13*i) >= 8) || (floppedHand[1]/4 == i && floppedHand[1]-(13*i) >= 8)) return true;
+        }
+    }
+    return false;
 }

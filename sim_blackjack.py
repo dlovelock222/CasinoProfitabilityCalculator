@@ -1,26 +1,46 @@
+# region : Imports
 import random
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 import time
+# endregion
 
+# region : Game and Simulation Settings
 
-
-# Define constants
-NUM_PLAYERS = 5
+# Define table rules and people
+NUM_PLAYERS = int(input("Enter in # of players: "))
+BJ_CHIPS = int(input("Enter BJ $ on table: "))
+BUSTER_CHIPS = int(input("Enter Buster $ on table: "))
+#NUM_PLAYERS = 5
 BLACKJACK_PAYOUT = 1.2
 MAX_SPLITS_ALLOWED = 3
 DECKS = 6
 
 #CHANGE THESE TO RUN DIFF SIM
-TOTAL_HAND = 20
-HANDS_PER_HOUR = 50
-HOURS_PLAYED = 3
+HANDS_IN_NIGHT = int(input("Enter in how many hands per night including dealer: "))
+HOURS = int(input("Enter in # hours at table: "))
+SIM_NIGHTS = int(input("Enter the number of simulation nights: "))
+printing_nights = input("Print nightly results? (Yes/No): ").lower() == 'yes'
+#HANDS_IN_NIGHT = 200 #INCLUDING DEALER
+#SIM_NIGHTS = 100
+#printing_nights = False
 
+#BANKROLL / BUYIN INFO
+BANK_PUSH = int(input("Enter the bank push amount: "))
+BUYIN = int(input("Enter the total buy-in amount: "))
+MIN_PUSH = int(input("Enter the minimum push amount: "))
+print('\n\n')
+#BANK_PUSH = 4000
+#BUYIN = 6000
+#MIN_PUSH = 2000
+EXTRA_BACKUP_CHIPS = BUYIN - BANK_PUSH
+bankroll_points = []
 
-global deck
+# endregion
 
-# Define player values (8-17) and dealer up cards (2-10, J, Q, K, A)
+# region : Create Basic Strategy Charts
+
 player_values_hard = list(range(4, 21))
 dealer_upcards = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
 
@@ -81,15 +101,15 @@ basic_strategy_pair = [
 ['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],  # Player value 10,10 (J/Q/K also)
 ]
 
-
 # Create the 2D array for basic strategy decisions
 basic_strategy_hard_array = dict(zip(player_values_hard, basic_strategy_hard))
 basic_strategy_soft_array = dict(zip(player_values_soft, basic_strategy_soft))
 basic_strategy_pair_array = dict(zip(player_values_pairs, basic_strategy_pair))
 
+# endregion
 
+# region : Bet sizes and helper functions
 
-# Create a deck of cards
 def create_shoe():
     ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
     deck = ranks * DECKS * 4 #4 is for the suits
@@ -103,7 +123,7 @@ def calculate_drop(total_bet):
     elif total_bet >= 25 and total_bet <= 300:
         drop = -3
     elif total_bet >= 300 and total_bet <= 500:
-        drop = -4
+        drop = -7
     else:
         drop = -5
     return drop
@@ -135,38 +155,39 @@ def calculate_hand_value(hand):
     return value, hard_or_soft
 
 def generate_bj_bet_size():
-    buster_bet_size = {
-    10: 1
-    # 5: 0.2,
-    # 10: 0.1,
-    # 15: 0.1,
-    # 20: 0.1,
-    # 30: 0.1,
-    # 40: 0.1,
-    # 50: 0.1,
-    # 60: 0.1,
-    # 80: 0.05,
-    # 100: 0.05
-    }
+    bj_bet_size = BJ_CHIPS / NUM_PLAYERS
+    # buster_bet_size = {
+    # 100: 1
+    # # 5: 0.2,
+    # # 10: 0.1,
+    # # 15: 0.1,
+    # # 20: 0.1,
+    # # 30: 0.1,
+    # # 40: 0.1,
+    # # 50: 0.1,
+    # # 60: 0.1,
+    # # 80: 0.05,
+    # # 100: 0.05
+    # }
     
-    random_number = random.choices(list(buster_bet_size.keys()), weights=list(buster_bet_size.values()))[0]
-    return(random_number)
+    #random_number = random.choices(list(bj_bet_size.keys()), weights=list(bj_bet_size.values()))[0]
+    return(bj_bet_size)
 
 def generate_buster_bet_size():
-    buster_bet_size = {
-    5: 1
-    # 0: 0.2,
-    # 5: 0.2,
-    # 10: 0.3,
-    # 15: 0.1,
-    # 20: 0.1,
-    # 30: 0.1
-    }
+    buster_bet_size = BUSTER_CHIPS / NUM_PLAYERS
+    # buster_bet_size = {
+    # 50: 1
+    # # 0: 0.2,
+    # # 5: 0.2,
+    # # 10: 0.3,
+    # # 15: 0.1,
+    # # 20: 0.1,
+    # # 30: 0.1
+    # }
 
-    random_number = random.choices(list(buster_bet_size.keys()), weights=list(buster_bet_size.values()))[0]
-    return(random_number)
+    #random_number = random.choices(list(buster_bet_size.keys()), weights=list(buster_bet_size.values()))[0]
+    return(buster_bet_size)
 
-#if blackjack
 def is_blackjack(hand):
     return len(hand) == 2 and 'A' in hand and any(card in ['10', 'J', 'Q', 'K'] for card in hand)
 
@@ -188,35 +209,12 @@ def buster_payout_calc(bet, hand):
     payout = bet * multiplier
     return payout
 
-
-
+# endregion
 
 # Main game loop
 def play_blackjack():
 
-    #these are statistics based on the entire shoe
-
-    number_player_hands = 0
-    total_drop = 0
-    total_profit = 0
-    total_buster_profit = 0
-    total_bj_profit = 0
-    number_blackjacks = 0
-    number_wins = 0
-    number_losses = 0
-    number_push = 0
-    number_bj_push = 0
-    number_splits = 0
-    number_surrenders = 0
-    bj_profit = 0
-    buster_profit = 0
-    bust_cards = []
-    bj_results = []
-    buster_results = []
-    hand_results = []
-
-    
-    # FUNCTIONS THAT NEED TO BE NESTED BECAUSE THEY USE "SHOE"
+    # region : Basic Strategy Functions using Deck (must stay inside play_blackjack function)
 
     def basic_strategy(player_hands, player_hand_value, dealer_hand):
 
@@ -313,216 +311,345 @@ def play_blackjack():
             decision = 'S'
 
         return(player_hand, player_hand_value, decision)
-
-
+    # endregion
     
-    #create shoe
-    deck = create_shoe()
-    hand_counter = 0
+    # region : Sim wide statistics and variables
+    nights = 0
+    sim_bankrupts = []
+    sim_total_profits = []
+    sim_bj_profit = []
+    sim_buster_profit = []
+    sim_buster_data = []
 
-    while hand_counter < TOTAL_HAND:
+    sim_bj_counter = []
+    sim_wins_counter = []
+    sim_losses_counter = []
+    sim_pushes_counter = []
+    sim_surrender_counter = []
+    sim_bjpush_counter = []
+    # endregion
 
-        
+    while nights < SIM_NIGHTS:
 
-        # Dealer's hand
-        dealer_hand = [deck.pop(), deck.pop()]
-        #dealer_hand = ['6','4']
-        dealer_hand_value = calculate_hand_value(dealer_hand)
-        while dealer_hand_value[0] < 17 or (dealer_hand_value[0] == 17 and dealer_hand_value[1] == 'Soft'):
-            dealer_hand.append(deck.pop())
+        # region : 1 Night Variables 
+        number_bank_hands = 0
+        night_profit = 0
+        total_drop = 0
+        total_profit = 0
+        total_buster_profit = 0
+        total_bj_profit = 0
+        number_blackjacks = 0
+        number_wins = 0
+        number_losses = 0
+        number_push = 0
+        number_bj_push = 0
+        number_splits = 0
+        number_surrenders = 0
+        bj_profit = 0
+        buster_profit = 0
+        bust_cards = []
+        bj_results = []
+        buster_results = []
+        hand_results = []
+        bankrupts = 0
+        global BANK_PUSH
+        STACK = BANK_PUSH
+        BACKUP_CHIPS = EXTRA_BACKUP_CHIPS
+        BANKRUPT = False
+        deck = create_shoe()
+        hand_counter = 0
+
+        # endregion
+
+        while hand_counter < HANDS_IN_NIGHT and BANKRUPT == False:
+
+            # region : Creating dealers hand + print statements
+            # Dealer's hand
+            dealer_hand = [deck.pop(), deck.pop()]
+            #dealer_hand = ['6','4']
             dealer_hand_value = calculate_hand_value(dealer_hand)
+            while dealer_hand_value[0] < 17 or (dealer_hand_value[0] == 17 and dealer_hand_value[1] == 'Soft'):
+                dealer_hand.append(deck.pop())
+                dealer_hand_value = calculate_hand_value(dealer_hand)
 
-        number_player = 1
-        total_bet = 0
-        buster_profit = 0 #reset
-        bj_profit = 0 #reset for each hand
-        hand_profit = 0
+            number_player = 1
+            total_bet = 0
+            buster_profit = 0 #reset
+            bj_profit = 0 #reset for each hand
+            hand_profit = 0
 
-        if hand_counter % 4 == 0 or hand_counter % 4 == 1: #THIS MEANS IT"S PLAYER! ALTERNATE EVERY TWO HANDS
-            print("========================================================")
-            print("Start of Hand #", hand_counter, "\n")
-            print("Dealer hand:", dealer_hand, "Value:", dealer_hand_value[1], dealer_hand_value[0],"\n")
-        
-        for _ in range(NUM_PLAYERS):
+            # if hand_counter % 4 == 0 or hand_counter % 4 == 1: #THIS MEANS IT"S PLAYER! ALTERNATE EVERY TWO HANDS
+            #     print("========================================================")
+            #     print("Start of Hand #", hand_counter, "\n")
+            #     print("Dealer hand:", dealer_hand, "Value:", dealer_hand_value[1], dealer_hand_value[0],"\n")
+            
+            #endregion
 
-            player_bj_bet = generate_bj_bet_size()
-            player_buster_bet = generate_buster_bet_size()
-            player_hands = [] #need a list because you might split
-            player_hand = [deck.pop(), deck.pop()]
-            #player_hand = ["A", "10"]
-            player_hand_value = calculate_hand_value(player_hand)
-            original_hand = (player_hand, player_hand_value)
-            player_hands.append(original_hand)
-            player_hands, player_hand_value, decisions = basic_strategy(player_hands, player_hand_value, dealer_hand)
+            for _ in range(NUM_PLAYERS):
+                
+                # region : Creating a player, bet size, and hand based off of strategy
+                player_bj_bet = generate_bj_bet_size()
+                player_buster_bet = generate_buster_bet_size()
+                player_hands = [] #need a list because you might split
+                player_hand = [deck.pop(), deck.pop()]
+                #player_hand = ["A", "10"]
+                player_hand_value = calculate_hand_value(player_hand)
+                original_hand = (player_hand, player_hand_value)
+                player_hands.append(original_hand)
+                player_hands, player_hand_value, decisions = basic_strategy(player_hands, player_hand_value, dealer_hand)
+                total_bet += (player_bj_bet + player_buster_bet)
+                # endregion
 
-            total_bet += (player_bj_bet + player_buster_bet)
+                # region : Compare each player hand (if splits) against dealer hand
+                if hand_counter % 4 == 0 or hand_counter % 4 == 1: #THIS MEANS IT"S PLAYER! ALTERNATE EVERY TWO HANDS
 
+                    player_hand_number = 1
+            
+                    for hand in player_hands:
+
+                        decision = decisions[player_hand_number - 1]
+
+                        if player_hand_number > 1:
+                            number_splits += 1
+
+                        player_hand = hand[0]
+                        player_hand_value = hand[1]
+            
+                        if decision == "D":
+                            player_bj_bet *= 2
+
+                        if decision == "BJ Already" and is_blackjack(dealer_hand):
+                            result = "BJ Push"
+                            number_bj_push += 1
+
+                        elif decision == "BJ Already":
+                            result = "Player Blackjack"
+                            bj_profit -= player_bj_bet * BLACKJACK_PAYOUT
+                            number_blackjacks += 1
+
+                        elif decision == 'SUR':
+                            result = "Player surrenders"
+                            bj_profit += (player_bj_bet / 2)
+                            number_surrenders += 1
+
+                        elif player_hand_value[0] > 21:
+                            result = "Player busts"
+                            bj_profit += player_bj_bet
+                            number_wins += 1
+                        
+                        elif dealer_hand_value[0] > 21 and player_hand_value[0] <= 21:
+                            result = "Dealer busts"
+                            bj_profit -= player_bj_bet
+                            number_losses += 1
+
+                        elif player_hand_value[0] > dealer_hand_value[0]:
+                            result = "Player wins"
+                            bj_profit -= player_bj_bet
+                            number_losses += 1
+
+                        elif player_hand_value[0] < dealer_hand_value[0]:
+                            result = "Dealer wins"
+                            bj_profit += player_bj_bet
+                            number_wins += 1
+                        
+                        elif player_hand_value[0] == dealer_hand_value[0]:
+                            result = "Push"
+                            number_push += 1
+
+                        else:
+                            result = "ERROR"
+
+
+                        if dealer_hand_value[0] > 21 and player_hand_number == 1: #This makes sure we dont pay multiple busters if they have mutliple hands (splitting)
+                            buster_profit -= buster_payout_calc(player_buster_bet, dealer_hand)  
+                        elif dealer_hand_value[0] <= 21 and player_hand_number == 1:
+                            buster_profit += player_buster_bet
+                        else:
+                            buster_profit = buster_profit
+                        
+
+                        #Print game results
+                        # print("Player Bet BJ: $", player_bj_bet, '--', "Buster: $", player_buster_bet)
+                        # print("Player", number_player,"hand #",player_hand_number, ":", player_hand, "Value:", player_hand_value[1], player_hand_value[0])
+                        # print(f"Result: {result}")
+                        # print("DECISION: ", decision)
+                        # print("----------")
+
+                        
+
+                        player_hand_number += 1
+
+                number_player += 1
+                # endregion
+
+            # region : Profit / Loss Calculations and Stack management
             if hand_counter % 4 == 0 or hand_counter % 4 == 1: #THIS MEANS IT"S PLAYER! ALTERNATE EVERY TWO HANDS
+                
+                # print("Dealer hand:", dealer_hand, "Value:", dealer_hand_value[1], dealer_hand_value[0])
+                # print(f"BJ Win/Loss: ${bj_profit}")
+                # print(f"Buster Win/Loss: ${buster_profit}")
+                # print(f"Drop: ${drop}")
+                # print("\n")
 
-                player_hand_number = 1
+                number_bank_hands += 1
+
+                if dealer_hand_value[0] > 21:
+                    bust_cards.append(len(dealer_hand)) # this means he didn't bust!
+                else:
+                    bust_cards.append(0)
+
+                total_buster_profit += buster_profit
+                total_bj_profit += bj_profit
+                bj_results.append(bj_profit)
+                buster_results.append(buster_profit)
+                drop = calculate_drop(total_bet)  
+                total_drop += drop
+
+                hand_profit = (buster_profit + bj_profit + drop)
+                hand_results.append(hand_profit)
+
+                
+                total_profit += hand_profit
+
+                STACK += hand_profit
+
+                if hand_profit > 0 and (STACK > BANK_PUSH):
+                    #if you make money on the hand, you add to bankroll, not pushing stack if ur above min push
+                    rathole = (STACK) - BANK_PUSH
+                    BACKUP_CHIPS += rathole
+                    STACK = BANK_PUSH
+
+                elif hand_profit > 0 and STACK < BANK_PUSH:
+                    STACK = STACK
+                    #TOP OFF OR DID I PROFIT EXTRA
+
+                elif hand_profit < 0:
+                    #NEED TO CHECK MAX LOSS HERE!
+                    #if you lose money, you have to reload pushing stack, or give up if you don't meet 
+
+                    if STACK <= 0: #you went bankrupt from a big loss in one hand                        
+                        STACK = 0
+
+                    stack_refill = (BANK_PUSH - STACK)
+
+                    if BACKUP_CHIPS > stack_refill: # you can refill like normal
+                        BACKUP_CHIPS -= stack_refill
+                        STACK = BANK_PUSH
+
+                    elif BACKUP_CHIPS + STACK >= MIN_PUSH: # Took all backup chips and put into stack. all in for more than min
+                        STACK += BACKUP_CHIPS
+                        BACKUP_CHIPS = 0
+                    
+                    elif BACKUP_CHIPS < MIN_PUSH:
+                        STACK += BACKUP_CHIPS
+                        BACKUP_CHIPS = 0
+                        bankrupts += 1
+                        BANKRUPT = True
+                
+
+
+                bankroll_points.append(STACK + BACKUP_CHIPS)
+
+            if len(deck) < 40:
+                #print("\n\nEMPTY SHOE, RESHUFFLE! \n\n")
+                deck = create_shoe()
+
+            hand_counter += 1
+
+            # endregion
+
+        # region : Per night printing
+
+        night_profit = (STACK + BACKUP_CHIPS) - BUYIN
+
+        #Table of buster distribution
+        unique_elements = list(set(bust_cards))
+        element_frequencies = [bust_cards.count(element) for element in unique_elements]
+        num_buster_cards = [(element, bust_cards.count(element)) for element in set(bust_cards)]
+        buster_frequency_table = pd.DataFrame(num_buster_cards, columns=['# Bust Cards', 'Frequency'])
+        total_events = buster_frequency_table['Frequency'].sum()
+        buster_frequency_table['%'] = (buster_frequency_table['Frequency'] / total_events) * 100
+        buster_frequency_table['%'] = buster_frequency_table['%'].round(4)
+
+        if printing_nights:
+            #We hit the total hands in sim, time to print summary stats.
+            print("Summary Statistics: \n")
+            print("Total # Hands:",number_bank_hands,"out of", hand_counter, "total")
+            print("Total $ Dropped:", total_drop)
+            print("Total Buster Profit: $", total_buster_profit)
+            print("Total BJ Profit: $", total_bj_profit)
+            print("Total Profit: $", total_profit)
+            
+
+            total_hands = number_bj_push + number_surrenders+ number_blackjacks + number_push + number_losses + number_wins
+            print(f"Blackjacks: {number_blackjacks} ({(number_blackjacks / total_hands) * 100:.2f}%)")
+            print(f"Wins: {number_wins} ({(number_wins / total_hands) * 100:.2f}%)")
+            print(f"Losses: {number_losses} ({(number_losses / total_hands) * 100:.2f}%)")
+            print(f"Pushes: {number_push} ({(number_push / total_hands) * 100:.2f}%)")
+            print(f"Surrenders: {number_surrenders} ({(number_surrenders / total_hands) * 100:.2f}%)")
+            print(f"BJ Pushes: {number_bj_push} ({(number_bj_push / total_hands) * 100:.2f}%)")
+            print(f"Splits: {number_splits} ({(number_splits / total_hands) * 100:.2f}%)")
+            print("TOTAL HANDS: ", total_hands)
+            print("\nBJ Profit / Hand:", total_bj_profit / number_bank_hands)
+            print("\nBuster Profit / Hand:", total_buster_profit / number_bank_hands)
+            
+            print("\n==================================")
+            print("==================================\n")
+
+            print("Rat Hole total:", STACK + BACKUP_CHIPS)
+            print("Bankrupts: ", bankrupts)
+            print(buster_frequency_table.to_string(index=False))
+
+
+        sim_bankrupts.append(BANKRUPT)
+        sim_total_profits.append(night_profit)
+        sim_bj_profit.append(total_bj_profit)
+        sim_buster_profit.append(total_buster_profit)
+        sim_buster_data.append(bust_cards)
+
+        sim_bj_counter.append(number_blackjacks)
+        sim_wins_counter.append(number_wins)
+        sim_losses_counter.append(number_losses)
+        sim_pushes_counter.append(number_push)
+        sim_surrender_counter.append(number_surrenders)
+        sim_bjpush_counter.append(number_bj_push)
+
+        # endregion
+
+        nights += 1 #increment
+
+    # region : Sim wide printing and data management
+    data = {
+    "Night": list(range(1, len(sim_bankrupts) + 1)),
+    "Bankrupt?": sim_bankrupts,
+    "Total Profits": sim_total_profits,
+    "Blackjack Profit": sim_bj_profit,
+    "Buster Profit": sim_buster_profit,
+    #"Blackjack Counter": sim_bj_counter,
+    #"Wins Counter": sim_wins_counter,
+    #"Losses Counter": sim_losses_counter,
+    #"Pushes Counter": sim_pushes_counter,
+    #"Surrender Counter": sim_surrender_counter,
+    #"BJ Push Counter": sim_bjpush_counter
+    }
+
+    # Create a DataFrame
+    df = pd.DataFrame(data)
+    df.set_index("Night", inplace=True)
+    df = df.sort_values(by='Total Profits', ascending=False)
         
-                for hand in player_hands:
+    print(df)
 
-                    decision = decisions[player_hand_number - 1]
-
-                    if player_hand_number > 1:
-                        number_splits += 1
-
-                    player_hand = hand[0]
-                    player_hand_value = hand[1]
-        
-                    if decision == "D":
-                        player_bj_bet *= 2
-
-                    if decision == "BJ Already" and is_blackjack(dealer_hand):
-                        result = "BJ Push"
-                        number_bj_push += 1
-
-                    elif decision == "BJ Already":
-                        result = "Player Blackjack"
-                        bj_profit -= player_bj_bet * BLACKJACK_PAYOUT
-                        number_blackjacks += 1
-
-                    elif decision == 'SUR':
-                        result = "Player surrenders"
-                        bj_profit += (player_bj_bet / 2)
-                        number_surrenders += 1
-
-                    elif player_hand_value[0] > 21:
-                        result = "Player busts"
-                        bj_profit += player_bj_bet
-                        number_wins += 1
-                    
-                    elif dealer_hand_value[0] > 21 and player_hand_value[0] <= 21:
-                        result = "Dealer busts"
-                        bj_profit -= player_bj_bet
-                        number_losses += 1
-
-                    elif player_hand_value[0] > dealer_hand_value[0]:
-                        result = "Player wins"
-                        bj_profit -= player_bj_bet
-                        number_losses += 1
-
-                    elif player_hand_value[0] < dealer_hand_value[0]:
-                        result = "Dealer wins"
-                        bj_profit += player_bj_bet
-                        number_wins += 1
-                    
-                    elif player_hand_value[0] == dealer_hand_value[0]:
-                        result = "Push"
-                        number_push += 1
-
-                    else:
-                        result = "ERROR"
-
-
-                    if dealer_hand_value[0] > 21 and player_hand_number == 1: #This makes sure we dont pay multiple busters if they have mutliple hands (splitting)
-                        buster_profit -= buster_payout_calc(player_buster_bet, dealer_hand)  
-                    elif dealer_hand_value[0] <= 21 and player_hand_number == 1:
-                        buster_profit += player_buster_bet
-                    else:
-                        buster_profit = buster_profit
-                    
-
-                    #Print game results
-                    print("Player Bet BJ: $", player_bj_bet, '--', "Buster: $", player_buster_bet)
-                    print("Player", number_player,"hand #",player_hand_number, ":", player_hand, "Value:", player_hand_value[1], player_hand_value[0])
-                    print(f"Result: {result}")
-                    print("DECISION: ", decision)
-                    print("----------")
-
-                    
-
-                    player_hand_number += 1
-
-            number_player += 1
-        if hand_counter % 4 == 0 or hand_counter % 4 == 1: #THIS MEANS IT"S PLAYER! ALTERNATE EVERY TWO HANDS
-            print("buster", buster_profit)
-            print('bj', bj_profit)
-
-        #OUT OF FOR LOOP all player hands, under player bank condition right here
-        hand_counter += 1
-
-        if hand_counter % 4 == 0 or hand_counter % 4 == 1: #THIS MEANS IT"S PLAYER! ALTERNATE EVERY TWO HANDS
-            
-            
-
-            # print("oooooooooooooooooooooooooooooooooo")
-            # print("Dealer hand:", dealer_hand, "Value:", dealer_hand_value[1], dealer_hand_value[0])
-            # print("oooooooooooooooooooooooooooooooooo")
-            # print(f"BJ Win/Loss: ${bj_profit}")
-            # print(f"Buster Win/Loss: ${buster_profit}")
-            # print(f"Drop: ${drop}")
-            # print("\n")
-
-            number_player_hands += 1
-
-            if dealer_hand_value[0] > 21:
-                bust_cards.append(len(dealer_hand)) # this means he didn't bust!
-            else:
-                bust_cards.append(0)
-
-            total_buster_profit += buster_profit
-            total_bj_profit += bj_profit
-            bj_results.append(bj_profit)
-            buster_results.append(buster_profit)
-            drop = calculate_drop(total_bet)  
-            total_drop += drop
-
-            hand_profit = (buster_profit + bj_profit + drop)
-            hand_results.append(hand_profit)
-
-            
-            total_profit += hand_profit
-            
-
-
-        if len(deck) < 40:
-            #print("\n\nEMPTY SHOE, RESHUFFLE! \n\n")
-            deck = create_shoe()
-
-
-
-    #We hit the total hands in sim, time to print summary stats.
-    print("Summary Statistics: \n")
-    print("Total # Hands:",number_player_hands,"out of", hand_counter, "total")
-    print("Total $ Dropped:", total_drop)
-    print("Total Buster Profit: $", total_buster_profit)
-    print("Total BJ Profit: $", total_bj_profit)
-    print("Total Profit: $", total_profit)
-    
-
-
-    print("Blackjacks:", number_blackjacks)
-    print("Wins:", number_wins)
-    print("Losses:", number_losses)
-    print("Pushes:", number_push)
-    print("Surrenders:", number_surrenders)
-    print("BJ Pushes:", number_bj_push)
-    print("Splits:", number_splits)
-    print("TOTAL HANDS: ", number_bj_push + number_surrenders+ number_blackjacks + number_push + number_losses + number_wins)
-    print("\nBJ Profit / Hand:", (sum(bj_results) / len(bj_results)))
-    print("\nBuster Profit / Hand:", (sum(buster_results) / len(buster_results)))
-    
-    print("\n==================================")
-    print("==================================\n")
-
-    #Here are lists of each hand history
-    #print("\nHand History:\n")
-    #print("Bust cards:", bust_cards)
-    #print("BJ Hand Profits:", bj_results)
-    #print("Buster Hand Profits", buster_results)
-    #print("Total Hand Profits", hand_results)
-
-    #Table of buster distribution
-    unique_elements = list(set(bust_cards))
-    element_frequencies = [bust_cards.count(element) for element in unique_elements]
-    num_buster_cards = [(element, bust_cards.count(element)) for element in set(bust_cards)]
-    buster_frequency_table = pd.DataFrame(num_buster_cards, columns=['# Bust Cards', 'Frequency'])
-    print(buster_frequency_table.to_string(index=False))
-    
-
-
-
+    # Calculate the count of bankrupts
+    print("=============================\nSummary Statistics: \n")
+    print("Average BJ Bet Size: ", BJ_CHIPS / NUM_PLAYERS)
+    print("Average Buster Bet Size: ", BUSTER_CHIPS / NUM_PLAYERS)
+    bankrupt_count = df["Bankrupt?"].sum()
+    bankrupt_percentage = (bankrupt_count / SIM_NIGHTS) * 100
+    print(f"Bankrupts: {bankrupt_count} out of {SIM_NIGHTS} ({bankrupt_percentage:.2f}%)")
+    average_profit = df["Total Profits"].mean()
+    print(f"Average profit per night: ${average_profit:.2f}\n")
+    print(f"Average profit per hour: ${average_profit / HOURS:.2f}/hour\n")
+    # endregion
 # Start the game
 play_blackjack()
